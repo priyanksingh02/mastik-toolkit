@@ -68,18 +68,18 @@ uint64_t sym_loadersymboloffset(const char *file, const char *name) {
 
 
   if (!bfd_check_format(abfd, bfd_object)) {
-    if (bfd_get_error () != bfd_error_file_ambiguously_recognized) 
+    if (bfd_get_error () != bfd_error_file_ambiguously_recognized)
       goto out;
   }
 
   long storage_needed = bfd_get_symtab_upper_bound (abfd);
-  if (storage_needed <= 0) 
+  if (storage_needed <= 0)
     goto out;
 
   symbol_table = (asymbol **) malloc (storage_needed);
 
   long number_of_symbols = bfd_canonicalize_symtab (abfd, symbol_table);
-  if (number_of_symbols < 0) 
+  if (number_of_symbols < 0)
     goto out;
 
   for (long i = 0; i < number_of_symbols; i++) {
@@ -110,14 +110,14 @@ uint64_t sym_addresstooffset(const char *file, uint64_t address) {
     goto out;
 
   if (!bfd_check_format(abfd, bfd_object)) {
-    if (bfd_get_error () != bfd_error_file_ambiguously_recognized) 
+    if (bfd_get_error () != bfd_error_file_ambiguously_recognized)
       goto out;
   }
 
   for (asection *s = abfd->sections; s; s = s->next) {
-    if (bfd_get_section_flags (abfd, s) & (SEC_LOAD)) {
-      uint64_t vma = bfd_section_vma(abfd, s);
-      uint64_t size = bfd_section_size(abfd, s);
+    if (bfd_section_flags (s) & (SEC_LOAD)) {
+      uint64_t vma = bfd_section_vma(s);
+      uint64_t size = bfd_section_size(s);
       if (address >= vma && address - vma  < size) {
 	rv = address - vma + s->filepos;
 	break;
@@ -173,7 +173,7 @@ uint64_t sym_debuglineoffset(const char *file, const char *src, int lineno) {
 
     // The first sibling is a DW_TAG_compile_unit
     res = dwarf_siblingof(dbg, NULL, &die, NULL);
-    if (res != DW_DLV_OK) 
+    if (res != DW_DLV_OK)
       goto out;
 
     res = dwarf_diename(die, &name, NULL);
@@ -186,13 +186,13 @@ uint64_t sym_debuglineoffset(const char *file, const char *src, int lineno) {
     name = NULL;
     if (found)
       break;
-    
+
     dwarf_dealloc(dbg, die, DW_DLA_DIE);
     die = NULL;
   }
 
   res = dwarf_srclines(die, &linebuf, &linecount, &error);
-  if(res != DW_DLV_OK) 
+  if(res != DW_DLV_OK)
     goto out;
   int nextline = 0;
   uint64_t nextaddr = ~0ULL;
@@ -214,7 +214,7 @@ uint64_t sym_debuglineoffset(const char *file, const char *src, int lineno) {
 
   dwarf_dealloc(dbg, linebuf, DW_DLA_LIST);
 
-  if (rv == ~0ULL) 
+  if (rv == ~0ULL)
     rv = nextaddr;
   if (rv != ~0ULL)
     rv = sym_addresstooffset(file, rv);
@@ -234,5 +234,3 @@ out:
   return ~0ULL;
 #endif
 }
-
-
